@@ -1,0 +1,890 @@
+<!doctype html>
+<html lang="en" class="h-full">
+ <head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>College Survival App</title>
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <script src="https://cdn.jsdelivr.net/npm/lucide@0.263.0/dist/umd/lucide.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&amp;display=swap" rel="stylesheet">
+  <script>
+tailwind.config={theme:{extend:{fontFamily:{main:['"DM Sans"','sans-serif']}}}}
+</script>
+  <style>
+html,body{height:100%;margin:0;font-family:'DM Sans',sans-serif;overflow:hidden}
+*{scrollbar-width:thin;scrollbar-color:#475569 transparent}
+::-webkit-scrollbar{width:6px}::-webkit-scrollbar-thumb{background:#475569;border-radius:8px}
+.glass{background:rgba(30,41,59,0.7);backdrop-filter:blur(16px);border:1px solid rgba(255,255,255,0.08)}
+.glass-light{background:rgba(51,65,85,0.5);backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,0.06)}
+.glow-blue{box-shadow:0 0 20px rgba(59,130,246,0.15)}
+.glow-amber{box-shadow:0 0 20px rgba(245,158,11,0.2)}
+.glow-red{box-shadow:0 0 20px rgba(239,68,68,0.2)}
+.glow-green{box-shadow:0 0 20px rgba(34,197,94,0.2)}
+.card-hover{transition:all .3s ease}
+.card-hover:hover{transform:translateY(-2px);box-shadow:0 8px 30px rgba(59,130,246,0.12)}
+.fade-in{animation:fadeIn .4s ease}
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+@keyframes countUp{from{opacity:0}to{opacity:1}}
+.toast{animation:toastIn .4s ease,toastOut .4s ease 2.6s forwards}
+@keyframes toastIn{from{transform:translateY(20px);opacity:0}to{transform:translateY(0);opacity:1}}
+@keyframes toastOut{from{opacity:1}to{opacity:0}}
+.nav-item{transition:all .2s}
+.nav-item:hover,.nav-item.active{background:rgba(59,130,246,0.15);color:#60a5fa}
+.progress-bar{transition:width .6s ease}
+.badge{font-size:0.65rem;padding:2px 8px;border-radius:9999px;font-weight:600;text-transform:uppercase;letter-spacing:.5px}
+.modal-overlay{background:rgba(0,0,0,0.6);backdrop-filter:blur(4px)}
+input,select,textarea{background:rgba(51,65,85,0.6)!important;border:1px solid rgba(255,255,255,0.1)!important;color:#e2e8f0!important;border-radius:0.75rem!important;padding:0.6rem 0.85rem!important;font-family:'DM Sans',sans-serif!important;font-size:0.875rem!important;outline:none!important;transition:border-color .2s!important}
+input:focus,select:focus,textarea:focus{border-color:rgba(59,130,246,0.5)!important;box-shadow:0 0 0 2px rgba(59,130,246,0.15)!important}
+select option{background:#1e293b;color:#e2e8f0}
+</style>
+  <style>body { box-sizing: border-box; }</style>
+ </head>
+ <body class="h-full bg-slate-950 text-slate-200 font-main">
+  <div id="app" class="h-full flex flex-col overflow-hidden"><!-- Toast container -->
+   <div id="toast-container" class="fixed top-4 right-4 z-[200] flex flex-col gap-2"></div><!-- Modal container -->
+   <div id="modal-overlay" class="fixed inset-0 z-[100] modal-overlay hidden items-center justify-center p-4" style="display:none">
+    <div id="modal-box" class="glass rounded-2xl w-full max-w-lg max-h-[85%] overflow-y-auto p-6 fade-in"></div>
+   </div><!-- Mobile drawer -->
+   <div id="drawer-overlay" class="fixed inset-0 z-[90] modal-overlay hidden" style="display:none" onclick="closeDrawer()">
+    <div id="drawer" class="absolute left-0 top-0 h-full w-64 glass p-4 fade-in" onclick="event.stopPropagation()">
+     <div class="flex items-center gap-3 mb-6 px-2">
+      <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-blue-500 to-cyan-400 flex items-center justify-center">
+       <i data-lucide="graduation-cap" class="w-5 h-5 text-white"></i>
+      </div><span class="font-bold text-lg text-white">CollegePro</span>
+     </div>
+     <nav id="drawer-nav" class="flex flex-col gap-1"></nav>
+    </div>
+   </div><!-- Top Navbar -->
+   <header class="glass border-b border-white/5 px-4 md:px-6 py-3 flex items-center gap-3 shrink-0 z-50"><button class="md:hidden p-1.5 rounded-lg hover:bg-white/10" onclick="openDrawer()"><i data-lucide="menu" class="w-5 h-5"></i></button>
+    <div class="flex-1 min-w-0">
+     <p id="greeting" class="text-sm font-semibold text-white truncate">Good Evening, Student</p>
+     <p id="date-display" class="text-xs text-slate-400"></p>
+    </div><button onclick="navigateTo('profile')" class="hidden sm:flex items-center glass-light hover:bg-slate-700/40 transition rounded-xl px-4 py-2 gap-3 cursor-pointer">
+     <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500 to-cyan-400 flex items-center justify-center">
+      <i data-lucide="user" class="w-4 h-4 text-white"></i>
+     </div>
+     <div class="text-left">
+      <p class="text-xs text-slate-400">Profile</p>
+      <p id="profile-name" class="text-sm font-semibold text-white">Add Profile</p>
+     </div></button><button class="relative p-2 rounded-xl hover:bg-white/10 transition" onclick="navigateTo('alerts')"> <i data-lucide="bell" class="w-5 h-5"></i> <span id="notif-badge" class="absolute -top-0.5 -right-0.5 w-4.5 h-4.5 bg-red-500 text-[10px] font-bold text-white rounded-full flex items-center justify-center hidden" style="width:18px;height:18px">0</span> </button>
+   </header>
+   <div class="flex flex-1 overflow-hidden"><!-- Desktop Sidebar -->
+    <aside id="sidebar" class="hidden md:flex flex-col w-56 lg:w-60 glass border-r border-white/5 shrink-0 overflow-y-auto py-4 px-3">
+     <div class="flex items-center gap-3 mb-6 px-2">
+      <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-blue-500 to-cyan-400 flex items-center justify-center">
+       <i data-lucide="graduation-cap" class="w-5 h-5 text-white"></i>
+      </div><span class="font-bold text-lg text-white">CollegePro</span>
+     </div>
+     <nav id="sidebar-nav" class="flex flex-col gap-1 flex-1"></nav>
+     <div class="mt-4 glass-light rounded-xl p-3 text-center">
+      <p id="semester-badge" class="text-xs text-slate-400">Semester 5</p>
+      <p class="text-[10px] text-slate-500 mt-1">College Survival App</p>
+     </div>
+    </aside><!-- Main Content -->
+    <main id="main-content" class="flex-1 overflow-y-auto p-4 md:p-6 pb-6 md:pb-6"></main>
+   </div>
+   <footer class="hidden md:flex items-center justify-center text-xs text-slate-500 border-t border-white/5 py-3 glass shrink-0">
+      Developed by ~ Shankar Prasad Pyke
+    </footer>
+
+   <!-- Mobile Bottom Nav -->
+   <nav id="bottom-nav" class="md:hidden glass border-t border-white/5 flex shrink-0 z-50"><button class="flex-1 flex flex-col items-center py-2.5 gap-0.5 nav-item" onclick="navigateTo('dashboard')" data-page="dashboard"> <i data-lucide="layout-dashboard" class="w-5 h-5"></i><span class="text-[10px]">Home</span> </button> <button class="flex-1 flex flex-col items-center py-2.5 gap-0.5 nav-item" onclick="navigateTo('assignments')" data-page="assignments"> <i data-lucide="check-square" class="w-5 h-5"></i><span class="text-[10px]">Tasks</span> </button> <button class="flex-1 flex flex-col items-center py-2.5 gap-0.5 nav-item" onclick="navigateTo('attendance')" data-page="attendance"> <i data-lucide="bar-chart-3" class="w-5 h-5"></i><span class="text-[10px]">Attend.</span> </button> <button class="flex-1 flex flex-col items-center py-2.5 gap-0.5 nav-item" onclick="openDrawer()" data-page="menu"> <i data-lucide="menu" class="w-5 h-5"></i><span class="text-[10px]">Menu</span> </button>
+   </nav>
+  </div>
+  <script>
+// ===== DATA LAYER =====
+const STORE_KEY = 'college_app_data';
+const defaultSubjects = [
+  {name:'DBMS',teacher:'',attended:0,total:0},
+  {name:'DBMS Lab',teacher:'',attended:0,total:0},
+  {name:'E-Commerce',teacher:'',attended:0,total:0},
+  {name:'Human Resources Management',teacher:'',attended:0,total:0},
+  {name:'Software Engineering',teacher:'',attended:0,total:0},
+  {name:'Operating System',teacher:'',attended:0,total:0},
+  {name:'Society Culture and Human Behaviour',teacher:'',attended:0,total:0}
+];
+
+function loadData(){
+  try{
+    const d=JSON.parse(localStorage.getItem(STORE_KEY));
+    if(d&&d.subjects)return d;
+  }catch(e){}
+  return {subjects:defaultSubjects.map((s,i)=>({...s,id:'s'+i})),assignments:[],exams:[],fees:[],timetable:[],reminders:[]};
+}
+function saveData(){localStorage.setItem(STORE_KEY,JSON.stringify(data))}
+let data=loadData();
+function genId(){return 'id'+Date.now()+Math.random().toString(36).slice(2,7)}
+
+// ===== CONFIG =====
+const defaultConfig={
+  student_name:'Student',
+  semester_label:'Semester 5',
+  background_color:'#0f172a',
+  surface_color:'#1e293b',
+  text_color:'#e2e8f0',
+  primary_action:'#3b82f6',
+  secondary_action:'#64748b',
+  font_family:'DM Sans',
+  font_size:14
+};
+let currentPage='dashboard';
+let chartInstances={};
+
+// ===== NAV =====
+const navItems=[
+  {id:'dashboard',icon:'layout-dashboard',label:'Dashboard'},
+  {id:'profile',icon:'user',label:'Profile'},
+  {id:'attendance',icon:'bar-chart-3',label:'Attendance'},
+  {id:'subjects',icon:'book-open',label:'Subjects'},
+  {id:'timetable',icon:'calendar',label:'Timetable'},
+  {id:'assignments',icon:'check-square',label:'Assignments'},
+  {id:'exams',icon:'file-text',label:'Exams'},
+  {id:'fees',icon:'credit-card',label:'Fees'},
+  {id:'alerts',icon:'alert-triangle',label:'Alerts'}
+];
+
+function buildNav(containerId){
+  const c=document.getElementById(containerId);if(!c)return;
+  c.innerHTML=navItems.map(n=>`<button class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-slate-300 ${currentPage===n.id?'active':''}" onclick="navigateTo('${n.id}');${containerId==='drawer-nav'?'closeDrawer()':''}" data-page="${n.id}"><i data-lucide="${n.icon}" class="w-4.5 h-4.5" style="width:18px;height:18px"></i><span>${n.label}</span></button>`).join('');
+}
+
+function navigateTo(page){
+  currentPage=page;
+  buildNav('sidebar-nav');buildNav('drawer-nav');
+  document.querySelectorAll('#bottom-nav .nav-item').forEach(b=>{
+    b.classList.toggle('active',b.dataset.page===page);
+  });
+  loadProfileData();
+  renderPage();
+  lucide.createIcons();
+}
+
+function openDrawer(){document.getElementById('drawer-overlay').style.display='flex';buildNav('drawer-nav');lucide.createIcons()}
+function closeDrawer(){document.getElementById('drawer-overlay').style.display='none'}
+
+// ===== TOAST =====
+function showToast(msg,type='success'){
+  const c=document.getElementById('toast-container');
+  const colors={success:'from-green-500 to-emerald-600',error:'from-red-500 to-rose-600',info:'from-blue-500 to-cyan-600',warning:'from-amber-500 to-orange-600'};
+  const icons={success:'check-circle',error:'x-circle',info:'info',warning:'alert-triangle'};
+  const t=document.createElement('div');
+  t.className=`toast flex items-center gap-3 px-4 py-3 rounded-xl bg-gradient-to-r ${colors[type]||colors.success} text-white text-sm font-medium shadow-lg`;
+  t.innerHTML=`<i data-lucide="${icons[type]||'check-circle'}" class="w-4 h-4 shrink-0"></i><span>${msg}</span>`;
+  c.appendChild(t);lucide.createIcons();
+  setTimeout(()=>{if(t.parentNode)t.remove()},3000);
+}
+
+// ===== MODAL =====
+function openModal(title,html){
+  document.getElementById('modal-box').innerHTML=`<div class="flex items-center justify-between mb-5"><h3 class="text-lg font-bold text-white">${title}</h3><button onclick="closeModal()" class="p-1 rounded-lg hover:bg-white/10"><i data-lucide="x" class="w-5 h-5"></i></button></div><div>${html}</div>`;
+  document.getElementById('modal-overlay').style.display='flex';
+  lucide.createIcons();
+}
+function closeModal(){document.getElementById('modal-overlay').style.display='none'}
+document.getElementById('modal-overlay').addEventListener('click',e=>{if(e.target===e.currentTarget)closeModal()});
+
+// ===== HELPERS =====
+function getGreeting(){const h=new Date().getHours();return h<12?'Good Morning':h<17?'Good Afternoon':'Good Evening'}
+function formatDate(d){return new Date(d).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})}
+function daysUntil(d){return Math.max(0,Math.ceil((new Date(d)-new Date())/(1000*60*60*24)))}
+function getAttPct(s){return s.total===0?0:Math.round(s.attended/s.total*100)}
+function classesNeeded(s,target=75){if(s.total===0)return 0;const need=Math.ceil((target*s.total-100*s.attended)/(100-target));return Math.max(0,need)}
+function overallAttendance(){const t=data.subjects.reduce((a,s)=>({att:a.att+s.attended,tot:a.tot+s.total}),{att:0,tot:0});return t.tot===0?0:Math.round(t.att/t.tot*100)}
+
+function emptyState(icon,title,subtitle,btnText,btnAction){
+  return `<div class="flex flex-col items-center justify-center py-16 text-center fade-in">
+    <div class="w-16 h-16 rounded-2xl bg-slate-800/80 flex items-center justify-center mb-4"><i data-lucide="${icon}" class="w-8 h-8 text-slate-500"></i></div>
+    <p class="text-slate-400 font-semibold text-lg mb-1">${title}</p>
+    <p class="text-slate-500 text-sm mb-5 max-w-xs">${subtitle}</p>
+    ${btnText?`<button onclick="${btnAction}" class="px-5 py-2.5 rounded-xl bg-gradient-to-r from-blue-500 to-cyan-500 text-white text-sm font-semibold hover:shadow-lg hover:shadow-blue-500/20 transition flex items-center gap-2"><i data-lucide="plus" class="w-4 h-4"></i>${btnText}</button>`:''}
+  </div>`;
+}
+
+function statCard(icon,value,label,color,glow='glow-blue'){
+  return `<div class="glass rounded-2xl p-4 card-hover ${glow} fade-in"><div class="flex items-center gap-3"><div class="w-10 h-10 rounded-xl bg-gradient-to-br ${color} flex items-center justify-center shrink-0"><i data-lucide="${icon}" class="w-5 h-5 text-white"></i></div><div><p class="text-2xl font-bold text-white">${value}</p><p class="text-xs text-slate-400">${label}</p></div></div></div>`;
+}
+
+// ===== ALERTS GENERATION =====
+function getAlerts(){
+  const alerts=[];
+  data.subjects.forEach(s=>{
+    const n=classesNeeded(s);
+    if(n>0)alerts.push({type:'warning',msg:`Need ${n} more class${n>1?'es':''} in ${s.name} for 75%`,icon:'alert-triangle'});
+  });
+  data.assignments.filter(a=>!a.completed).forEach(a=>{
+    const d=daysUntil(a.deadline);
+    if(d<=1)alerts.push({type:'error',msg:`Assignment "${a.title}" due ${d===0?'today':'tomorrow'}!`,icon:'alert-circle'});
+    else if(d<=3)alerts.push({type:'warning',msg:`Assignment "${a.title}" due in ${d} days`,icon:'clock'});
+  });
+  data.exams.forEach(e=>{
+    const d=daysUntil(e.date);
+    if(d<=7&&d>0)alerts.push({type:'info',msg:`${e.subject} exam in ${d} day${d>1?'s':''}`,icon:'file-text'});
+    else if(d===0)alerts.push({type:'error',msg:`${e.subject} exam is TODAY!`,icon:'alert-circle'});
+  });
+  data.fees.filter(f=>!f.paid).forEach(f=>{
+    const d=daysUntil(f.dueDate);
+    if(d<=5)alerts.push({type:'error',msg:`Fee "${f.name}" due in ${d} day${d>1?'s':''}!`,icon:'credit-card'});
+  });
+  return alerts;
+}
+
+// ===== PAGE RENDERERS =====
+function renderPage(){
+  destroyCharts();
+  const mc=document.getElementById('main-content');
+  switch(currentPage){
+    case 'dashboard':mc.innerHTML=renderDashboard();break;
+    case 'profile':mc.innerHTML=renderProfile();break;
+    case 'attendance':mc.innerHTML=renderAttendance();break;
+    case 'subjects':mc.innerHTML=renderSubjects();break;
+    case 'timetable':mc.innerHTML=renderTimetable();break;
+    case 'assignments':mc.innerHTML=renderAssignments();break;
+    case 'exams':mc.innerHTML=renderExams();break;
+    case 'fees':mc.innerHTML=renderFees();break;
+    case 'alerts':mc.innerHTML=renderAlerts();break;
+  }
+  lucide.createIcons();
+  setTimeout(initCharts,100);
+  updateNotifBadge();
+}
+
+function updateNotifBadge(){
+  const alerts=getAlerts();
+  const b=document.getElementById('notif-badge');
+  if(alerts.length>0){b.classList.remove('hidden');b.textContent=alerts.length}else{b.classList.add('hidden')}
+}
+
+function destroyCharts(){Object.values(chartInstances).forEach(c=>{try{c.destroy()}catch(e){}});chartInstances={}}
+
+// ===== PROFILE =====
+let profileData = JSON.parse(localStorage.getItem("college_profile")) || {
+  name:'',
+  department:'',
+  semester:'',
+  roll_number:'',
+  college_name:'',
+  email:''
+};
+
+function loadProfileData(){
+  const studentName = profileData.name
+  ? profileData.name.trim().split(' ')[0]
+  : 'Student';
+
+  document.getElementById('profile-name').textContent =
+    profileData.name || 'Add Profile';
+
+  document.getElementById('semester-badge').textContent =
+    profileData.semester
+      ? 'Semester ' + profileData.semester
+      : 'Semester 5';
+
+  document.getElementById('greeting').textContent =
+    `${getGreeting()}, ${studentName}`;
+}
+
+function renderProfile(){
+  return `<div class="fade-in space-y-6">
+    <div class="flex items-center justify-between">
+      <h2 class="text-xl font-bold text-white">Student Profile</h2>
+      <button onclick="editProfileForm()" class="px-4 py-2 rounded-xl bg-gradient-to-r from-blue-500 to-cyan-500 text-white text-sm font-semibold flex items-center gap-2"><i data-lucide="pencil" class="w-4 h-4"></i>Edit Profile</button>
+    </div>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div class="glass rounded-2xl p-5 card-hover">
+        <div class="flex items-center gap-3 mb-4"><i data-lucide="user" class="w-5 h-5 text-blue-400"></i><p class="text-xs text-slate-400">Name</p></div>
+        <p class="text-lg font-bold text-white">${profileData.name||'Not added'}</p>
+      </div>
+      <div class="glass rounded-2xl p-5 card-hover">
+        <div class="flex items-center gap-3 mb-4"><i data-lucide="building-2" class="w-5 h-5 text-purple-400"></i><p class="text-xs text-slate-400">Department</p></div>
+        <p class="text-lg font-bold text-white">${profileData.department||'Not added'}</p>
+      </div>
+      <div class="glass rounded-2xl p-5 card-hover">
+        <div class="flex items-center gap-3 mb-4"><i data-lucide="book" class="w-5 h-5 text-emerald-400"></i><p class="text-xs text-slate-400">Semester</p></div>
+        <p class="text-lg font-bold text-white">${profileData.semester||'Not added'}</p>
+      </div>
+      <div class="glass rounded-2xl p-5 card-hover">
+        <div class="flex items-center gap-3 mb-4"><i data-lucide="badge" class="w-5 h-5 text-amber-400"></i><p class="text-xs text-slate-400">Roll Number</p></div>
+        <p class="text-lg font-bold text-white">${profileData.roll_number||'Not added'}</p>
+      </div>
+      <div class="glass rounded-2xl p-5 card-hover md:col-span-2">
+        <div class="flex items-center gap-3 mb-4"><i data-lucide="building" class="w-5 h-5 text-rose-400"></i><p class="text-xs text-slate-400">College Name</p></div>
+        <p class="text-lg font-bold text-white">${profileData.college_name||'Not added'}</p>
+      </div>
+      <div class="glass rounded-2xl p-5 card-hover md:col-span-2">
+        <div class="flex items-center gap-3 mb-4"><i data-lucide="mail" class="w-5 h-5 text-cyan-400"></i><p class="text-xs text-slate-400">Email</p></div>
+        <p class="text-lg font-bold text-white break-all">${profileData.email||'Not added'}</p>
+      </div>
+    </div>
+  </div>`;
+}
+
+function editProfileForm(){
+  openModal('Edit Student Profile',`
+    <form onsubmit="saveProfile(event)">
+      <label class="block text-xs text-slate-400 mb-1">Name</label>
+      <input type="text" id="prof-name" value="${profileData.name}" class="w-full mb-3" placeholder="Full name">
+      <label class="block text-xs text-slate-400 mb-1">Department</label>
+      <input type="text" id="prof-dept" value="${profileData.department}" class="w-full mb-3" placeholder="e.g. Computer Science">
+      <label class="block text-xs text-slate-400 mb-1">Semester</label>
+      <input type="text" id="prof-sem" value="${profileData.semester}" class="w-full mb-3" placeholder="e.g. 5">
+      <label class="block text-xs text-slate-400 mb-1">Roll Number</label>
+      <input type="text" id="prof-roll" value="${profileData.roll_number}" class="w-full mb-3" placeholder="e.g. CSE-101">
+      <label class="block text-xs text-slate-400 mb-1">College Name</label>
+      <input type="text" id="prof-college" value="${profileData.college_name}" class="w-full mb-3" placeholder="Your college name">
+      <label class="block text-xs text-slate-400 mb-1">Email</label>
+      <input type="email" id="prof-email" value="${profileData.email}" class="w-full mb-4" placeholder="your.email@college.com">
+      <div class="flex gap-2">
+        <button type="submit" class="flex-1 py-2.5 rounded-xl bg-gradient-to-r from-blue-500 to-cyan-500 text-white text-sm font-semibold">Save Profile</button>
+        <button type="button" onclick="closeModal()" class="flex-1 py-2.5 rounded-xl glass-light text-sm text-slate-300">Cancel</button>
+      </div>
+    </form>`);
+}
+
+function saveProfile(e){
+  e.preventDefault();
+
+  profileData = {
+    name:document.getElementById('prof-name').value.trim(),
+    department:document.getElementById('prof-dept').value.trim(),
+    semester:document.getElementById('prof-sem').value.trim(),
+    roll_number:document.getElementById('prof-roll').value.trim(),
+    college_name:document.getElementById('prof-college').value.trim(),
+    email:document.getElementById('prof-email').value.trim()
+  };
+
+  localStorage.setItem("college_profile", JSON.stringify(profileData));
+
+  loadProfileData();
+
+  closeModal();
+  renderPage();
+  showToast("Profile saved successfully!");
+}
+
+// ===== DASHBOARD =====
+function renderDashboard(){
+  const att=overallAttendance();
+  const pendingAssign=data.assignments.filter(a=>!a.completed).length;
+  const upcomingExams=data.exams.filter(e=>daysUntil(e.date)>=0).length;
+  const feesDue=data.fees.filter(f=>!f.paid).reduce((a,f)=>a+Number(f.amount||0),0);
+  const todayDay=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][new Date().getDay()];
+  const todayClasses=data.timetable.filter(t=>t.day===todayDay);
+  const alerts=getAlerts().slice(0,4);
+  const upcomingDeadlines=data.assignments.filter(a=>!a.completed).sort((a,b)=>new Date(a.deadline)-new Date(b.deadline)).slice(0,3);
+
+  return `<div class="fade-in space-y-6">
+    <div class="grid grid-cols-2 lg:grid-cols-5 gap-3 md:gap-4">
+      ${statCard('bar-chart-3',att+'%','Attendance','from-blue-500 to-cyan-500','glow-blue')}
+      ${statCard('file-text',upcomingExams,'Upcoming Exams','from-purple-500 to-fuchsia-500','glow-blue')}
+      ${statCard('check-square',pendingAssign,'Pending Tasks','from-amber-500 to-orange-500','glow-amber')}
+      ${statCard('credit-card',feesDue>0?'₹'+feesDue.toLocaleString():'₹0','Fees Due','from-red-500 to-rose-500','glow-red')}
+      ${statCard('calendar',todayClasses.length,'Today Classes','from-green-500 to-emerald-500','glow-green')}
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+      <div class="lg:col-span-2 space-y-4">
+        <div class="glass rounded-2xl p-5">
+          <h3 class="text-base font-bold text-white mb-3 flex items-center gap-2"><i data-lucide="sun" class="w-4 h-4 text-amber-400"></i>Today's Schedule</h3>
+          ${todayClasses.length===0?'<p class="text-sm text-slate-500 py-4 text-center">No classes scheduled today</p>':
+          `<div class="space-y-2">${todayClasses.sort((a,b)=>a.time.localeCompare(b.time)).map(c=>`<div class="flex items-center gap-3 glass-light rounded-xl px-3 py-2.5"><span class="text-xs font-mono text-blue-400 w-14 shrink-0">${c.time}</span><span class="text-sm text-slate-200">${c.subject}</span><span class="text-xs text-slate-500 ml-auto">${c.room||''}</span></div>`).join('')}</div>`}
+        </div>
+
+        ${upcomingDeadlines.length>0?`<div class="glass rounded-2xl p-5">
+          <h3 class="text-base font-bold text-white mb-3 flex items-center gap-2"><i data-lucide="clock" class="w-4 h-4 text-orange-400"></i>Upcoming Deadlines</h3>
+          <div class="space-y-2">${upcomingDeadlines.map(a=>{const d=daysUntil(a.deadline);return `<div class="flex items-center gap-3 glass-light rounded-xl px-3 py-2.5"><div class="flex-1 min-w-0"><p class="text-sm text-slate-200 truncate">${a.title}</p><p class="text-xs text-slate-500">${a.subject}</p></div><span class="badge ${d<=1?'bg-red-500/20 text-red-400':d<=3?'bg-amber-500/20 text-amber-400':'bg-blue-500/20 text-blue-400'}">${d===0?'Today':d===1?'Tomorrow':d+' days'}</span></div>`}).join('')}</div>
+        </div>`:''}
+      </div>
+
+      <div class="space-y-4">
+        <div class="glass rounded-2xl p-5">
+          <h3 class="text-base font-bold text-white mb-3 flex items-center gap-2"><i data-lucide="alert-triangle" class="w-4 h-4 text-amber-400"></i>Alerts</h3>
+          ${alerts.length===0?'<p class="text-sm text-slate-500 text-center py-4">All clear! No alerts</p>':
+          `<div class="space-y-2">${alerts.map(a=>{
+            const colors={error:'border-red-500/30 bg-red-500/5',warning:'border-amber-500/30 bg-amber-500/5',info:'border-blue-500/30 bg-blue-500/5'};
+            const iconColors={error:'text-red-400',warning:'text-amber-400',info:'text-blue-400'};
+            return `<div class="rounded-xl border ${colors[a.type]||colors.info} px-3 py-2.5 flex items-start gap-2"><i data-lucide="${a.icon}" class="w-4 h-4 ${iconColors[a.type]||iconColors.info} shrink-0 mt-0.5"></i><p class="text-xs text-slate-300">${a.msg}</p></div>`}).join('')}</div>`}
+        </div>
+
+        <div class="glass rounded-2xl p-5">
+          <h3 class="text-base font-bold text-white mb-3">Attendance Overview</h3>
+          <div style="height:180px"><canvas id="chart-att-pie"></canvas></div>
+          <div class="md:hidden mt-4 pt-3 border-t border-white/5 text-center text-[10px] text-slate-500">
+            Developed by ~ Shankar Prasad Pyke
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>`;
+}
+
+// ===== ATTENDANCE =====
+function renderAttendance(){
+  if(data.subjects.length===0)return emptyState('bar-chart-3','No Subjects Added Yet','Add subjects to start tracking attendance','Add Subject','showSubjectForm()');
+  return `<div class="fade-in space-y-5">
+    <div class="flex items-center justify-between flex-wrap gap-3">
+      <h2 class="text-xl font-bold text-white">Attendance Tracker</h2>
+      <div class="flex gap-2">
+        <button onclick="resetAttendance()" class="px-3 py-2 rounded-xl glass-light text-xs text-slate-400 hover:text-white transition">Reset All</button>
+      </div>
+    </div>
+    <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+      ${data.subjects.map(s=>{
+        const pct=getAttPct(s);const need=classesNeeded(s);
+        const barColor=pct>=75?'from-green-500 to-emerald-400':pct>=60?'from-amber-500 to-yellow-400':'from-red-500 to-rose-400';
+        return `<div class="glass rounded-2xl p-4 card-hover">
+          <div class="flex items-center justify-between mb-3">
+            <h4 class="font-semibold text-white text-sm">${s.name}</h4>
+            <span class="text-lg font-bold ${pct>=75?'text-green-400':pct>=60?'text-amber-400':'text-red-400'}">${pct}%</span>
+          </div>
+          <div class="w-full h-2 bg-slate-700 rounded-full mb-2"><div class="h-full rounded-full bg-gradient-to-r ${barColor} progress-bar" style="width:${pct}%"></div></div>
+          <p class="text-xs text-slate-400 mb-3">${s.attended}/${s.total} classes${need>0?` · <span class="text-amber-400">Need ${need} more for 75%</span>`:' · <span class="text-green-400">On track!</span>'}</p>
+          <div class="flex gap-2">
+            <button onclick="markAttendance('${s.id}','present')" class="flex-1 py-2 rounded-xl bg-green-500/15 text-green-400 text-xs font-semibold hover:bg-green-500/25 transition flex items-center justify-center gap-1"><i data-lucide="check" class="w-3 h-3"></i>Present</button>
+            <button onclick="markAttendance('${s.id}','absent')" class="flex-1 py-2 rounded-xl bg-red-500/15 text-red-400 text-xs font-semibold hover:bg-red-500/25 transition flex items-center justify-center gap-1"><i data-lucide="x" class="w-3 h-3"></i>Absent</button>
+            <button onclick="editAttendance('${s.id}')" class="py-2 px-3 rounded-xl glass-light text-xs text-slate-400 hover:text-white transition"><i data-lucide="pencil" class="w-3 h-3"></i></button>
+          </div>
+        </div>`}).join('')}
+    </div>
+    <div class="glass rounded-2xl p-5">
+      <h3 class="text-base font-bold text-white mb-3">Attendance Chart</h3>
+      <div style="height:260px"><canvas id="chart-att-bar"></canvas></div>
+    </div>
+  </div>`;
+}
+
+function markAttendance(id,type){
+  const s=data.subjects.find(s=>s.id===id);if(!s)return;
+  s.total++;
+  if(type==='present')s.attended++;
+  saveData();renderPage();
+  showToast(type==='present'?`Marked present for ${s.name}`:`Marked absent for ${s.name}`,type==='present'?'success':'info');
+}
+
+function editAttendance(id){
+  const s=data.subjects.find(s=>s.id===id);if(!s)return;
+  openModal('Edit Attendance - '+s.name,`
+    <form onsubmit="saveAttendanceEdit(event,'${id}')">
+      <label class="block text-xs text-slate-400 mb-1">Classes Attended</label>
+      <input type="number" id="edit-att" value="${s.attended}" min="0" class="w-full mb-3">
+      <label class="block text-xs text-slate-400 mb-1">Total Classes</label>
+      <input type="number" id="edit-tot" value="${s.total}" min="0" class="w-full mb-4">
+      <div class="flex gap-2"><button type="submit" class="flex-1 py-2.5 rounded-xl bg-gradient-to-r from-blue-500 to-cyan-500 text-white text-sm font-semibold">Save</button><button type="button" onclick="closeModal()" class="flex-1 py-2.5 rounded-xl glass-light text-sm text-slate-300">Cancel</button></div>
+    </form>`);
+}
+function saveAttendanceEdit(e,id){
+  e.preventDefault();const s=data.subjects.find(s=>s.id===id);if(!s)return;
+  s.attended=Math.max(0,parseInt(document.getElementById('edit-att').value)||0);
+  s.total=Math.max(0,parseInt(document.getElementById('edit-tot').value)||0);
+  if(s.attended>s.total)s.attended=s.total;
+  saveData();closeModal();renderPage();showToast('Attendance updated');
+}
+function resetAttendance(){
+  openModal('Reset Attendance',`<p class="text-sm text-slate-300 mb-4">Reset all attendance data to zero?</p><div class="flex gap-2"><button onclick="doResetAttendance()" class="flex-1 py-2.5 rounded-xl bg-red-500/20 text-red-400 font-semibold text-sm hover:bg-red-500/30 transition">Yes, Reset</button><button onclick="closeModal()" class="flex-1 py-2.5 rounded-xl glass-light text-sm text-slate-300">Cancel</button></div>`);
+}
+function doResetAttendance(){data.subjects.forEach(s=>{s.attended=0;s.total=0});saveData();closeModal();renderPage();showToast('Attendance reset','info')}
+
+// ===== SUBJECTS =====
+function renderSubjects(){
+  return `<div class="fade-in space-y-5">
+    <div class="flex items-center justify-between flex-wrap gap-3">
+      <h2 class="text-xl font-bold text-white">Subjects</h2>
+      <button onclick="showSubjectForm()" class="px-4 py-2 rounded-xl bg-gradient-to-r from-blue-500 to-cyan-500 text-white text-sm font-semibold flex items-center gap-2 hover:shadow-lg hover:shadow-blue-500/20 transition"><i data-lucide="plus" class="w-4 h-4"></i>Add Subject</button>
+    </div>
+    ${data.subjects.length===0?emptyState('book-open','No Subjects Added Yet','Start by adding your first subject','Add Subject','showSubjectForm()'):
+    `<div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+      ${data.subjects.map(s=>{const pct=getAttPct(s);return `<div class="glass rounded-2xl p-4 card-hover">
+        <div class="flex items-start justify-between mb-2">
+          <div><h4 class="font-semibold text-white text-sm">${s.name}</h4>${s.teacher?`<p class="text-xs text-slate-500 mt-0.5">${s.teacher}</p>`:''}</div>
+          <span class="text-sm font-bold ${pct>=75?'text-green-400':pct>=60?'text-amber-400':'text-red-400'}">${pct}%</span>
+        </div>
+        <div class="w-full h-1.5 bg-slate-700 rounded-full mb-3"><div class="h-full rounded-full bg-blue-500 progress-bar" style="width:${pct}%"></div></div>
+        <div class="flex gap-2">
+          <button onclick="showSubjectForm('${s.id}')" class="flex-1 py-2 rounded-xl glass-light text-xs text-slate-300 hover:text-white transition">Edit</button>
+          <button onclick="confirmDeleteSubject('${s.id}')" class="py-2 px-3 rounded-xl bg-red-500/10 text-red-400 text-xs hover:bg-red-500/20 transition"><i data-lucide="trash-2" class="w-3 h-3"></i></button>
+        </div>
+      </div>`}).join('')}
+    </div>`}
+  </div>`;
+}
+
+function showSubjectForm(id){
+  const s=id?data.subjects.find(s=>s.id===id):null;
+  openModal(s?'Edit Subject':'Add Subject',`
+    <form onsubmit="saveSubject(event,'${id||''}')">
+      <label class="block text-xs text-slate-400 mb-1">Subject Name</label>
+      <input type="text" id="sub-name" value="${s?s.name:''}" required class="w-full mb-3" placeholder="e.g. Data Structures">
+      <label class="block text-xs text-slate-400 mb-1">Teacher Name</label>
+      <input type="text" id="sub-teacher" value="${s?s.teacher||'':''}" class="w-full mb-4" placeholder="Optional">
+      <button type="submit" class="w-full py-2.5 rounded-xl bg-gradient-to-r from-blue-500 to-cyan-500 text-white text-sm font-semibold">${s?'Update':'Add'} Subject</button>
+    </form>`);
+}
+function saveSubject(e,id){
+  e.preventDefault();
+  const name=document.getElementById('sub-name').value.trim();
+  const teacher=document.getElementById('sub-teacher').value.trim();
+  if(!name)return;
+  if(id){const s=data.subjects.find(s=>s.id===id);if(s){s.name=name;s.teacher=teacher}}
+  else{data.subjects.push({id:genId(),name,teacher,attended:0,total:0})}
+  saveData();closeModal();renderPage();showToast(id?'Subject updated':'Subject added');
+}
+function confirmDeleteSubject(id){
+  const s=data.subjects.find(s=>s.id===id);if(!s)return;
+  openModal('Delete Subject',`<p class="text-sm text-slate-300 mb-4">Delete "${s.name}"? This will remove related attendance, assignments, exams and timetable data.</p><div class="flex gap-2"><button onclick="deleteSubject('${id}')" class="flex-1 py-2.5 rounded-xl bg-red-500/20 text-red-400 font-semibold text-sm hover:bg-red-500/30">Delete</button><button onclick="closeModal()" class="flex-1 py-2.5 rounded-xl glass-light text-sm text-slate-300">Cancel</button></div>`);
+}
+function deleteSubject(id){
+  const subject = data.subjects.find(s => s.id === id);
+  if(!subject) return;
+
+  const subjectName = subject.name;
+
+  // Remove subject
+  data.subjects = data.subjects.filter(s => s.id !== id);
+
+  // Remove related assignments
+  data.assignments = data.assignments.filter(a => a.subject !== subjectName);
+
+  // Remove related exams
+  data.exams = data.exams.filter(e => e.subject !== subjectName);
+
+  // Remove related timetable classes (recommended)
+  data.timetable = data.timetable.filter(t => t.subject !== subjectName);
+
+  saveData();
+  closeModal();
+  renderPage();
+
+  showToast('Subject and related data deleted','info');
+}
+// ===== TIMETABLE =====
+const days=['Mon','Tue','Wed','Thu','Fri'];
+const slotColors=['from-blue-500/20 to-blue-600/10 border-blue-500/30','from-purple-500/20 to-purple-600/10 border-purple-500/30','from-emerald-500/20 to-emerald-600/10 border-emerald-500/30','from-amber-500/20 to-amber-600/10 border-amber-500/30','from-rose-500/20 to-rose-600/10 border-rose-500/30','from-cyan-500/20 to-cyan-600/10 border-cyan-500/30','from-fuchsia-500/20 to-fuchsia-600/10 border-fuchsia-500/30'];
+function getSlotColor(subject){
+  const idx=data.subjects.findIndex(s=>s.name===subject);
+  return slotColors[(idx>=0?idx:Math.abs(subject.split('').reduce((a,c)=>a+c.charCodeAt(0),0)))%slotColors.length];
+}
+function time24To12(time24){const[h,m]=time24.split(':');const hh=parseInt(h);const ampm=hh>=12?'PM':'AM';const h12=(hh>12?hh-12:hh||12).toString().padStart(2,'0');return h12+':'+m+' '+ampm}
+
+function renderTimetable(){
+  return `<div class="fade-in space-y-5">
+    <div class="flex items-center justify-between flex-wrap gap-3">
+      <h2 class="text-xl font-bold text-white">Weekly Schedule</h2>
+      <button onclick="showTimetableForm()" class="px-4 py-2 rounded-xl bg-gradient-to-r from-blue-500 to-cyan-500 text-white text-sm font-semibold flex items-center gap-2"><i data-lucide="plus" class="w-4 h-4"></i>Add Class</button>
+    </div>
+    ${data.timetable.length===0?emptyState('calendar','No Timetable Yet','Add your class schedule to get started','Add Class','showTimetableForm()'):
+    `<div class="space-y-4">
+      ${days.map(day=>{
+        const dayClasses=data.timetable.filter(t=>t.day===day).sort((a,b)=>a.time.localeCompare(b.time));
+        const dayNames={Mon:'Monday',Tue:'Tuesday',Wed:'Wednesday',Thu:'Thursday',Fri:'Friday'};
+        return `<div class="glass rounded-2xl p-5 card-hover">
+          <h3 class="text-base font-bold text-white mb-4 flex items-center gap-2"><i data-lucide="calendar" class="w-4 h-4 text-blue-400"></i>${dayNames[day]}</h3>
+          ${dayClasses.length===0?`<p class="text-sm text-slate-500 text-center py-6">No classes scheduled</p>`:
+          `<div class="space-y-2">${dayClasses.map(c=>`<div class="flex items-center gap-3 bg-slate-800/40 rounded-xl px-3 py-2.5 hover:bg-slate-800/60 transition cursor-pointer group" onclick="showTimetableForm('${c.id}')">
+            <div class="w-12 h-12 rounded-lg bg-gradient-to-br ${getSlotColor(c.subject)} flex items-center justify-center shrink-0"><i data-lucide="clock" class="w-4 h-4 text-white"></i></div>
+            <div class="flex-1 min-w-0">
+              <p class="text-sm font-semibold text-white">${c.subject}</p>
+              <p class="text-xs text-slate-400">${time24To12(c.time)}${c.room?' · '+c.room:''}</p>
+            </div>
+            <button onclick="event.stopPropagation();showTimetableForm('${c.id}')" class="p-1 rounded-lg opacity-0 group-hover:opacity-100 transition hover:bg-blue-500/20"><i data-lucide="pencil" class="w-4 h-4 text-blue-400"></i></button>
+            <button onclick="event.stopPropagation();deleteTimetableSlot('${c.id}')" class="p-1 rounded-lg opacity-0 group-hover:opacity-100 transition hover:bg-red-500/20"><i data-lucide="trash-2" class="w-4 h-4 text-red-400"></i></button>
+          </div>`).join('')}</div>`}
+        </div>`}).join('')}
+    </div>`}
+  </div>`;
+}
+
+function showTimetableForm(id,prefillDay,prefillTime){
+  const s=id?data.timetable.find(t=>t.id===id):null;
+  const subjectOptions=data.subjects.map(sub=>`<option value="${sub.name}" ${s&&s.subject===sub.name?'selected':''}>${sub.name}</option>`).join('');
+  const timeVal=s?s.time:(prefillTime||'09:00');
+  openModal(s?'Edit Class':'Add Class',`
+    <form onsubmit="saveTimetableSlot(event,'${id||''}')">
+      <label class="block text-xs text-slate-400 mb-1">Subject</label>
+      <select id="tt-subject" required class="w-full mb-3"><option value="">Select subject</option>${subjectOptions}<option value="__custom">Other...</option></select>
+      <div id="tt-custom-wrap" class="hidden mb-3"><label class="block text-xs text-slate-400 mb-1">Custom Subject</label><input type="text" id="tt-custom" class="w-full" placeholder="Subject name"></div>
+      <label class="block text-xs text-slate-400 mb-1">Day</label>
+      <select id="tt-day" required class="w-full mb-3">${days.map(d=>`<option value="${d}" ${(s?s.day:prefillDay)===d?'selected':''}>${d}</option>`).join('')}</select>
+      <label class="block text-xs text-slate-400 mb-1">Time (24-hour format)</label>
+      <input type="time" id="tt-time" value="${timeVal}" required class="w-full mb-1">
+      <p class="text-xs text-slate-500 mb-3">Displays as: <span id="tt-time-display" class="text-blue-400 font-semibold">${time24To12(timeVal)}</span></p>
+      <label class="block text-xs text-slate-400 mb-1">Room (Optional)</label>
+      <input type="text" id="tt-room" value="${s?s.room||'':''}" class="w-full mb-4" placeholder="e.g. Room 301">
+      <div class="flex gap-2">
+        <button type="submit" class="flex-1 py-2.5 rounded-xl bg-gradient-to-r from-blue-500 to-cyan-500 text-white text-sm font-semibold">${s?'Update':'Add'}</button>
+        ${s?`<button type="button" onclick="deleteTimetableSlot('${id}')" class="py-2.5 px-4 rounded-xl bg-red-500/15 text-red-400 text-sm font-semibold">Delete</button>`:''}
+      </div>
+    </form>
+    <script>
+      document.getElementById('tt-subject').addEventListener('change',function(){document.getElementById('tt-custom-wrap').classList.toggle('hidden',this.value!=='__custom')});
+      document.getElementById('tt-time').addEventListener('change',function(){document.getElementById('tt-time-display').textContent=time24To12(this.value)});
+    <\/script>`);
+}
+function saveTimetableSlot(e,id){
+  e.preventDefault();
+  let subject=document.getElementById('tt-subject').value;
+  if(subject==='__custom')subject=document.getElementById('tt-custom').value.trim();
+  if(!subject)return;
+  const day=document.getElementById('tt-day').value;
+  const time=document.getElementById('tt-time').value;
+  const room=document.getElementById('tt-room').value.trim();
+  if(id){const s=data.timetable.find(t=>t.id===id);if(s){s.subject=subject;s.day=day;s.time=time;s.room=room}}
+  else{data.timetable.push({id:genId(),subject,day,time,room})}
+  saveData();closeModal();renderPage();showToast(id?'Class updated':'Class added');
+}
+function deleteTimetableSlot(id){data.timetable=data.timetable.filter(t=>t.id!==id);saveData();closeModal();renderPage();showToast('Class removed','info')}
+
+// ===== ASSIGNMENTS =====
+let assignFilter='all';
+function renderAssignments(){
+  const filtered=assignFilter==='all'?data.assignments:data.assignments.filter(a=>assignFilter==='completed'?a.completed:!a.completed);
+  return `<div class="fade-in space-y-5">
+    <div class="flex items-center justify-between flex-wrap gap-3">
+      <h2 class="text-xl font-bold text-white">Assignments</h2>
+      <button onclick="showAssignmentForm()" class="px-4 py-2 rounded-xl bg-gradient-to-r from-blue-500 to-cyan-500 text-white text-sm font-semibold flex items-center gap-2"><i data-lucide="plus" class="w-4 h-4"></i>Add Assignment</button>
+    </div>
+    <div class="flex gap-2">
+      ${['all','pending','completed'].map(f=>`<button onclick="assignFilter='${f}';renderPage()" class="px-3 py-1.5 rounded-lg text-xs font-semibold transition ${assignFilter===f?'bg-blue-500/20 text-blue-400':'glass-light text-slate-400 hover:text-white'}">${f.charAt(0).toUpperCase()+f.slice(1)}</button>`).join('')}
+    </div>
+    ${data.assignments.length===0?emptyState('check-square','No Assignments Found','Track your assignments and deadlines','Add Assignment','showAssignmentForm()'):
+    filtered.length===0?`<p class="text-sm text-slate-500 text-center py-8">No ${assignFilter} assignments</p>`:
+    `<div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+      ${filtered.map(a=>{
+        const d=daysUntil(a.deadline);
+        const prioColors={High:'bg-red-500/20 text-red-400',Medium:'bg-amber-500/20 text-amber-400',Low:'bg-green-500/20 text-green-400'};
+        return `<div class="glass rounded-2xl p-4 card-hover ${a.completed?'opacity-70':''}">
+          <div class="flex items-start justify-between mb-2">
+            <div class="flex-1 min-w-0"><h4 class="font-semibold text-white text-sm truncate">${a.title}</h4><p class="text-xs text-slate-500">${a.subject}</p></div>
+            <span class="badge ${prioColors[a.priority]||prioColors.Medium} ml-2">${a.priority}</span>
+          </div>
+          <div class="flex items-center gap-2 mb-3">
+            <span class="text-xs text-slate-400"><i data-lucide="calendar" class="w-3 h-3 inline mr-1"></i>${formatDate(a.deadline)}</span>
+            ${!a.completed?`<span class="text-xs ${d<=1?'text-red-400':d<=3?'text-amber-400':'text-slate-500'}">(${d===0?'Today':d===1?'Tomorrow':d+' days'})</span>`:''}
+          </div>
+          <div class="flex gap-2">
+            <button onclick="toggleAssignment('${a.id}')" class="flex-1 py-2 rounded-xl ${a.completed?'bg-green-500/15 text-green-400':'glass-light text-slate-300'} text-xs font-semibold hover:scale-[1.02] transition">${a.completed?'✓ Completed':'Mark Done'}</button>
+            <button onclick="showAssignmentForm('${a.id}')" class="py-2 px-3 rounded-xl glass-light text-xs text-slate-400"><i data-lucide="pencil" class="w-3 h-3"></i></button>
+            <button onclick="confirmDeleteAssignment('${a.id}')" class="py-2 px-3 rounded-xl bg-red-500/10 text-red-400 text-xs"><i data-lucide="trash-2" class="w-3 h-3"></i></button>
+          </div>
+        </div>`}).join('')}
+    </div>`}
+    ${data.assignments.length>0?`<div class="glass rounded-2xl p-5"><h3 class="text-base font-bold text-white mb-3">Completion Overview</h3><div style="height:200px"><canvas id="chart-assign"></canvas></div></div>`:''}
+  </div>`;
+}
+
+function showAssignmentForm(id){
+  const a=id?data.assignments.find(a=>a.id===id):null;
+  const subjectOptions=data.subjects.map(s=>`<option value="${s.name}" ${a&&a.subject===s.name?'selected':''}>${s.name}</option>`).join('');
+  openModal(a?'Edit Assignment':'Add Assignment',`
+    <form onsubmit="saveAssignment(event,'${id||''}')">
+      <label class="block text-xs text-slate-400 mb-1">Title</label>
+      <input type="text" id="asgn-title" value="${a?a.title:''}" required class="w-full mb-3" placeholder="Assignment title">
+      <label class="block text-xs text-slate-400 mb-1">Subject</label>
+      <select id="asgn-subject" required class="w-full mb-3"><option value="">Select</option>${subjectOptions}</select>
+      <label class="block text-xs text-slate-400 mb-1">Deadline</label>
+      <input type="date" id="asgn-deadline" value="${a?a.deadline:''}" required class="w-full mb-3">
+      <label class="block text-xs text-slate-400 mb-1">Priority</label>
+      <select id="asgn-priority" class="w-full mb-4">${['Low','Medium','High'].map(p=>`<option value="${p}" ${a&&a.priority===p?'selected':''}>${p}</option>`).join('')}</select>
+      <button type="submit" class="w-full py-2.5 rounded-xl bg-gradient-to-r from-blue-500 to-cyan-500 text-white text-sm font-semibold">${a?'Update':'Add'}</button>
+    </form>`);
+}
+function saveAssignment(e,id){
+  e.preventDefault();
+  const title=document.getElementById('asgn-title').value.trim();
+  const subject=document.getElementById('asgn-subject').value;
+  const deadline=document.getElementById('asgn-deadline').value;
+  const priority=document.getElementById('asgn-priority').value;
+  if(!title||!subject||!deadline)return;
+  if(id){const a=data.assignments.find(a=>a.id===id);if(a){a.title=title;a.subject=subject;a.deadline=deadline;a.priority=priority}}
+  else{data.assignments.push({id:genId(),title,subject,deadline,priority,completed:false})}
+  saveData();closeModal();renderPage();showToast(id?'Assignment updated':'Assignment added');
+}
+function toggleAssignment(id){
+  const a=data.assignments.find(a=>a.id===id);if(!a)return;
+  a.completed=!a.completed;saveData();renderPage();
+  showToast(a.completed?'Assignment completed! 🎉':'Assignment marked pending','success');
+}
+function confirmDeleteAssignment(id){
+  openModal('Delete Assignment',`<p class="text-sm text-slate-300 mb-4">Delete this assignment?</p><div class="flex gap-2"><button onclick="deleteAssignment('${id}')" class="flex-1 py-2.5 rounded-xl bg-red-500/20 text-red-400 font-semibold text-sm">Delete</button><button onclick="closeModal()" class="flex-1 py-2.5 rounded-xl glass-light text-sm text-slate-300">Cancel</button></div>`);
+}
+function deleteAssignment(id){data.assignments=data.assignments.filter(a=>a.id!==id);saveData();closeModal();renderPage();showToast('Assignment deleted','info')}
+
+// ===== EXAMS =====
+function renderExams(){
+  return `<div class="fade-in space-y-5">
+    <div class="flex items-center justify-between flex-wrap gap-3">
+      <h2 class="text-xl font-bold text-white">Exams</h2>
+      <button onclick="showExamForm()" class="px-4 py-2 rounded-xl bg-gradient-to-r from-blue-500 to-cyan-500 text-white text-sm font-semibold flex items-center gap-2"><i data-lucide="plus" class="w-4 h-4"></i>Add Exam</button>
+    </div>
+    ${data.exams.length===0?emptyState('file-text','Add Your First Exam','Keep track of exam dates and countdowns','Add Exam','showExamForm()'):
+    `<div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+      ${data.exams.sort((a,b)=>new Date(a.date)-new Date(b.date)).map(ex=>{
+        const d=daysUntil(ex.date);const past=new Date(ex.date)<new Date(new Date().toDateString());
+        return `<div class="glass rounded-2xl p-4 card-hover ${past?'opacity-60':''}">
+          <div class="flex items-start justify-between mb-2">
+            <div><h4 class="font-semibold text-white text-sm">${ex.subject}</h4><p class="text-xs text-slate-500">${formatDate(ex.date)}</p></div>
+            <span class="badge ${past?'bg-slate-500/20 text-slate-400':d===0?'bg-red-500/20 text-red-400':d<=3?'bg-amber-500/20 text-amber-400':'bg-blue-500/20 text-blue-400'}">${past?'Done':d===0?'Today':d+' day'+(d>1?'s':'')}</span>
+          </div>
+          ${!past?`<div class="w-full h-1.5 bg-slate-700 rounded-full mb-3"><div class="h-full rounded-full bg-gradient-to-r from-blue-500 to-purple-500 progress-bar" style="width:${Math.max(5,100-d*3)}%"></div></div>`:''}
+          ${ex.notes?`<p class="text-xs text-slate-400 mb-3 line-clamp-2">${ex.notes}</p>`:''}
+          <div class="flex gap-2">
+            <button onclick="showExamForm('${ex.id}')" class="flex-1 py-2 rounded-xl glass-light text-xs text-slate-300 hover:text-white transition">Edit</button>
+            <button onclick="confirmDeleteExam('${ex.id}')" class="py-2 px-3 rounded-xl bg-red-500/10 text-red-400 text-xs"><i data-lucide="trash-2" class="w-3 h-3"></i></button>
+          </div>
+        </div>`}).join('')}
+    </div>`}
+  </div>`;
+}
+
+function showExamForm(id){
+  const ex=id?data.exams.find(e=>e.id===id):null;
+  const subjectOptions=data.subjects.map(s=>`<option value="${s.name}" ${ex&&ex.subject===s.name?'selected':''}>${s.name}</option>`).join('');
+  openModal(ex?'Edit Exam':'Add Exam',`
+    <form onsubmit="saveExam(event,'${id||''}')">
+      <label class="block text-xs text-slate-400 mb-1">Subject</label>
+      <select id="exam-subject" required class="w-full mb-3"><option value="">Select</option>${subjectOptions}</select>
+      <label class="block text-xs text-slate-400 mb-1">Exam Date</label>
+      <input type="date" id="exam-date" value="${ex?ex.date:''}" required class="w-full mb-3">
+      <label class="block text-xs text-slate-400 mb-1">Notes (Optional)</label>
+      <textarea id="exam-notes" class="w-full mb-4" rows="2" placeholder="Study tips, syllabus...">${ex?ex.notes||'':''}</textarea>
+      <button type="submit" class="w-full py-2.5 rounded-xl bg-gradient-to-r from-blue-500 to-cyan-500 text-white text-sm font-semibold">${ex?'Update':'Add'}</button>
+    </form>`);
+}
+function saveExam(e,id){
+  e.preventDefault();
+  const subject=document.getElementById('exam-subject').value;
+  const date=document.getElementById('exam-date').value;
+  const notes=document.getElementById('exam-notes').value.trim();
+  if(!subject||!date)return;
+  if(id){const ex=data.exams.find(e=>e.id===id);if(ex){ex.subject=subject;ex.date=date;ex.notes=notes}}
+  else{data.exams.push({id:genId(),subject,date,notes})}
+  saveData();closeModal();renderPage();showToast(id?'Exam updated':'Exam added');
+}
+function confirmDeleteExam(id){
+  openModal('Delete Exam',`<p class="text-sm text-slate-300 mb-4">Delete this exam?</p><div class="flex gap-2"><button onclick="deleteExam('${id}')" class="flex-1 py-2.5 rounded-xl bg-red-500/20 text-red-400 font-semibold text-sm">Delete</button><button onclick="closeModal()" class="flex-1 py-2.5 rounded-xl glass-light text-sm text-slate-300">Cancel</button></div>`);
+}
+function deleteExam(id){data.exams=data.exams.filter(e=>e.id!==id);saveData();closeModal();renderPage();showToast('Exam deleted','info')}
+
+// ===== FEES =====
+function renderFees(){
+  return `<div class="fade-in space-y-5">
+    <div class="flex items-center justify-between flex-wrap gap-3">
+      <h2 class="text-xl font-bold text-white">Fees</h2>
+      <button onclick="showFeeForm()" class="px-4 py-2 rounded-xl bg-gradient-to-r from-blue-500 to-cyan-500 text-white text-sm font-semibold flex items-center gap-2"><i data-lucide="plus" class="w-4 h-4"></i>Add Fee</button>
+    </div>
+    ${data.fees.length===0?emptyState('credit-card','No Fees Added','Track semester fees and due dates','Add Fee','showFeeForm()'):
+    `<div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+      ${data.fees.map(f=>{
+        const d=daysUntil(f.dueDate);const overdue=!f.paid&&new Date(f.dueDate)<new Date(new Date().toDateString());
+        return `<div class="glass rounded-2xl p-4 card-hover ${f.paid?'opacity-70':''}">
+          <div class="flex items-start justify-between mb-2">
+            <div><h4 class="font-semibold text-white text-sm">${f.name}</h4><p class="text-xs text-slate-500">Due: ${formatDate(f.dueDate)}</p></div>
+            <span class="badge ${f.paid?'bg-green-500/20 text-green-400':overdue?'bg-red-500/20 text-red-400':'bg-amber-500/20 text-amber-400'}">${f.paid?'Paid':overdue?'Overdue':'Unpaid'}</span>
+          </div>
+          <p class="text-xl font-bold text-white mb-1">₹${Number(f.amount||0).toLocaleString()}</p>
+          ${overdue&&!f.paid?`<p class="text-xs text-red-400 mb-2 flex items-center gap-1"><i data-lucide="alert-circle" class="w-3 h-3"></i>Late fee may apply</p>`:''}
+          ${!f.paid&&!overdue?`<p class="text-xs text-slate-500 mb-2">${d} day${d!==1?'s':''} remaining</p>`:''}
+          <div class="flex gap-2">
+            ${!f.paid?`<button onclick="markFeePaid('${f.id}')" class="flex-1 py-2 rounded-xl bg-green-500/15 text-green-400 text-xs font-semibold hover:bg-green-500/25 transition">Mark Paid</button>`:'<span class="flex-1 py-2 rounded-xl bg-green-500/10 text-green-400 text-xs font-semibold text-center">✓ Paid</span>'}
+            <button onclick="showFeeForm('${f.id}')" class="py-2 px-3 rounded-xl glass-light text-xs text-slate-400"><i data-lucide="pencil" class="w-3 h-3"></i></button>
+            <button onclick="confirmDeleteFee('${f.id}')" class="py-2 px-3 rounded-xl bg-red-500/10 text-red-400 text-xs"><i data-lucide="trash-2" class="w-3 h-3"></i></button>
+          </div>
+        </div>`}).join('')}
+    </div>`}
+  </div>`;
+}
+
+function showFeeForm(id){
+  const f=id?data.fees.find(f=>f.id===id):null;
+  openModal(f?'Edit Fee':'Add Fee',`
+    <form onsubmit="saveFee(event,'${id||''}')">
+      <label class="block text-xs text-slate-400 mb-1">Fee Name</label>
+      <input type="text" id="fee-name" value="${f?f.name:''}" required class="w-full mb-3" placeholder="e.g. Semester 5 Tuition">
+      <label class="block text-xs text-slate-400 mb-1">Amount (₹)</label>
+      <input type="number" id="fee-amount" value="${f?f.amount:''}" required class="w-full mb-3" placeholder="50000">
+      <label class="block text-xs text-slate-400 mb-1">Due Date</label>
+      <input type="date" id="fee-due" value="${f?f.dueDate:''}" required class="w-full mb-4">
+      <button type="submit" class="w-full py-2.5 rounded-xl bg-gradient-to-r from-blue-500 to-cyan-500 text-white text-sm font-semibold">${f?'Update':'Add'}</button>
+    </form>`);
+}
+function saveFee(e,id){
+  e.preventDefault();
+  const name=document.getElementById('fee-name').value.trim();
+  const amount=document.getElementById('fee-amount').value;
+  const dueDate=document.getElementById('fee-due').value;
+  if(!name||!amount||!dueDate)return;
+  if(id){const f=data.fees.find(f=>f.id===id);if(f){f.name=name;f.amount=amount;f.dueDate=dueDate}}
+  else{data.fees.push({id:genId(),name,amount,dueDate,paid:false})}
+  saveData();closeModal();renderPage();showToast(id?'Fee updated':'Fee added');
+}
+function markFeePaid(id){const f=data.fees.find(f=>f.id===id);if(f){f.paid=true;saveData();renderPage();showToast('Fee marked as paid! 🎉')}}
+function confirmDeleteFee(id){
+  openModal('Delete Fee',`<p class="text-sm text-slate-300 mb-4">Delete this fee record?</p><div class="flex gap-2"><button onclick="deleteFee('${id}')" class="flex-1 py-2.5 rounded-xl bg-red-500/20 text-red-400 font-semibold text-sm">Delete</button><button onclick="closeModal()" class="flex-1 py-2.5 rounded-xl glass-light text-sm text-slate-300">Cancel</button></div>`);
+}
+function deleteFee(id){data.fees=data.fees.filter(f=>f.id!==id);saveData();closeModal();renderPage();showToast('Fee deleted','info')}
+
+// ===== ALERTS =====
+function renderAlerts(){
+  const alerts=getAlerts();
+  return `<div class="fade-in space-y-5">
+    <h2 class="text-xl font-bold text-white">Smart Alerts</h2>
+    ${alerts.length===0?emptyState('bell','All Clear!','No alerts right now. Keep up the great work!','',''):
+    `<div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+      ${alerts.map(a=>{
+        const styles={error:'border-red-500/30 bg-red-500/5 glow-red',warning:'border-amber-500/30 bg-amber-500/5 glow-amber',info:'border-blue-500/30 bg-blue-500/5 glow-blue'};
+        const iconC={error:'text-red-400',warning:'text-amber-400',info:'text-blue-400'};
+        return `<div class="glass rounded-2xl p-4 border ${styles[a.type]||styles.info} card-hover flex items-start gap-3">
+          <div class="w-9 h-9 rounded-xl ${a.type==='error'?'bg-red-500/15':a.type==='warning'?'bg-amber-500/15':'bg-blue-500/15'} flex items-center justify-center shrink-0"><i data-lucide="${a.icon}" class="w-4.5 h-4.5 ${iconC[a.type]}" style="width:18px;height:18px"></i></div>
+          <p class="text-sm text-slate-200 pt-1.5">${a.msg}</p>
+        </div>`}).join('')}
+    </div>`}
+  </div>`;
+}
+
+// ===== CHARTS =====
+function initCharts(){
+  // Dashboard attendance pie
+  const pieEl=document.getElementById('chart-att-pie');
+  if(pieEl){
+    const att=data.subjects.reduce((a,s)=>a+s.attended,0);
+    const abs=data.subjects.reduce((a,s)=>a+(s.total-s.attended),0);
+    chartInstances.pie=new Chart(pieEl,{type:'doughnut',data:{labels:['Present','Absent'],datasets:[{data:[att||0,abs||0],backgroundColor:['#22c55e','#ef4444'],borderWidth:0}]},options:{responsive:true,maintainAspectRatio:false,cutout:'70%',plugins:{legend:{display:true,position:'bottom',labels:{color:'#94a3b8',font:{size:11,family:'DM Sans'},padding:12}}}}});
+  }
+  // Attendance bar
+  const barEl=document.getElementById('chart-att-bar');
+  if(barEl){
+    chartInstances.attBar=new Chart(barEl,{type:'bar',data:{labels:data.subjects.map(s=>s.name.length>12?s.name.slice(0,12)+'…':s.name),datasets:[{label:'Attendance %',data:data.subjects.map(s=>getAttPct(s)),backgroundColor:data.subjects.map(s=>getAttPct(s)>=75?'rgba(34,197,94,0.6)':getAttPct(s)>=60?'rgba(245,158,11,0.6)':'rgba(239,68,68,0.6)'),borderRadius:8,barThickness:24}]},options:{responsive:true,maintainAspectRatio:false,scales:{y:{beginAtZero:true,max:100,grid:{color:'rgba(255,255,255,0.05)'},ticks:{color:'#64748b',font:{size:10}}},x:{grid:{display:false},ticks:{color:'#64748b',font:{size:9},maxRotation:45}}},plugins:{legend:{display:false}}}});
+  }
+  // Assignment chart
+  const assignEl=document.getElementById('chart-assign');
+  if(assignEl){
+    const done=data.assignments.filter(a=>a.completed).length;
+    const pending=data.assignments.filter(a=>!a.completed).length;
+    chartInstances.assign=new Chart(assignEl,{type:'bar',data:{labels:['Completed','Pending'],datasets:[{data:[done,pending],backgroundColor:['rgba(34,197,94,0.6)','rgba(245,158,11,0.6)'],borderRadius:8,barThickness:40}]},options:{responsive:true,maintainAspectRatio:false,indexAxis:'y',scales:{x:{beginAtZero:true,grid:{color:'rgba(255,255,255,0.05)'},ticks:{color:'#64748b',stepSize:1}},y:{grid:{display:false},ticks:{color:'#94a3b8',font:{size:12}}}},plugins:{legend:{display:false}}}});
+  }
+}
+
+
+// ===== INIT =====
+function updateGreeting(){
+  const cfg=window.elementSdk?.config||defaultConfig;
+  document.getElementById('greeting').textContent=`${getGreeting()}, ${cfg.student_name||defaultConfig.student_name}`;
+  document.getElementById('date-display').textContent=new Date().toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric',year:'numeric'});
+  document.getElementById('semester-badge').textContent=cfg.semester_label||defaultConfig.semester_label;
+}
+
+function applyConfig(cfg){
+  const c={...defaultConfig,...cfg};
+  document.body.style.backgroundColor=c.background_color;
+  document.body.style.fontFamily=`${c.font_family}, 'DM Sans', sans-serif`;
+  document.body.style.color=c.text_color;
+  document.body.style.fontSize=c.font_size+'px';
+  updateGreeting();
+}
+
+buildNav('sidebar-nav');
+updateGreeting();
+loadProfileData();
+navigateTo('dashboard');
+setInterval(updateGreeting,60000);
+</script>
+</html>
